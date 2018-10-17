@@ -13,10 +13,7 @@
 
 void timing0(void){
     //set ports 5, 6, 7 to GPIO
-    P5SEL0 = 0x00;
-    P6SEL0 = 0x00;
-    P7SEL0 = 0x00;
-
+    P
     //set ports 5, 6, 7 to outputs
     P5DIR = 0xB0;
     P6DIR = 0xB0;

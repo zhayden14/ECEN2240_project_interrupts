@@ -11,32 +11,8 @@
 
 #include "msp.h"
 
-void timing0(void){
-    //set ports 5, 6, 7 to GPIO
-    P5SEL0 = 0x00;
-    P6SEL0 = 0x00;
-    P7SEL0 = 0x00;
-
-    //set ports 5, 6, 7 to outputs
-    P5DIR = 0xB0;
-    P6DIR = 0xB0;
-    P7DIR = 0xF0;
-
-}
-void timing1(void){
-    //set pin function to capture
-    P5SEL0 = 0xB0;
-    P6SEL0 = 0xB0;
-    P7SEL0 = 0xF0;
-
-    //set ports 5,6,7 to inputs
-    P5DIR = 0x00;
-    P6DIR = 0x00;
-    P7DIR = 0x00;
-
-    //start Timers 1 and 2
-
-}
+void timing0(void){}
+void timing1(void){}
 //void timing2(void){}
 //void timing3(void){}
 //void timing4(void){}
@@ -183,34 +159,15 @@ void main(void)
        P2SEL1 &= ~0x3F;
        P2DS   = 0x3F;
        P2OUT &= 0x0F;
-
-       //configure port 3 (velocity sensor input) (not yet implemented)
-       P3DIR = 0xFF;    //all outputs
-       P3SEL0 = 0x00;   //as gpio
-       P3SEL1 = 0x00;   //minimize power
+       //configure port 3 (velocity sensor input)
 
        //configure port 4 (bump switch input)
-       P4DIR = 0x00;    //All pins are inputs
-       P4SEL0 = 0x00;   //all pins are configured for GPIO
-       P4SEL1 = 0x00;   //
 
-       //configure port 5 (capture input - TA2)
-       P5DIR = 0x00;
-       P5SEL0 = 0x0B0;
-       P5SEL1 = 0x00;
-       P5OUT = 0xB0;
+       //configure port 5 (capture input)
 
-       //configure port 6 (capture input - TA2)
-       P6DIR = 0x00;
-       P6SEL0 = 0xB0;
-       P6SEL1 = 0x00;
-       P6OUT = 0xB0;
+       //configure port 6 (capture input)
 
-       //configure port 7 (capture input - TA1)
-       P7DIR = 0x00;
-       P7SEL0 = 0xF0;
-       P7SEL1 = 0x00;
-       P7OUT = 0xF0;
+       //configure port 7 (capture input)
 
        //configure port 8 (unused)
        P8DIR  = 0xFF;   //all outputs

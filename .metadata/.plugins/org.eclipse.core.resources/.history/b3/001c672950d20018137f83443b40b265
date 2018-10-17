@@ -12,27 +12,18 @@
 #include "msp.h"
 
 void timing0(void){
-    //set ports 5, 6, 7 to GPIO
-    P5SEL0 = 0x00;
-    P6SEL0 = 0x00;
-    P7SEL0 = 0x00;
-
     //set ports 5, 6, 7 to outputs
-    P5DIR = 0xB0;
-    P6DIR = 0xB0;
-    P7DIR = 0xF0;
 
 }
 void timing1(void){
-    //set pin function to capture
-    P5SEL0 = 0xB0;
-    P6SEL0 = 0xB0;
-    P7SEL0 = 0xF0;
-
     //set ports 5,6,7 to inputs
     P5DIR = 0x00;
     P6DIR = 0x00;
     P7DIR = 0x00;
+    //set pin function to capture
+    P5SEL0 = 0xB0;
+    P6SEL0 = 0xB0;
+    P7SEL0 = 0xF0;
 
     //start Timers 1 and 2
 
@@ -198,19 +189,19 @@ void main(void)
        P5DIR = 0x00;
        P5SEL0 = 0x0B0;
        P5SEL1 = 0x00;
-       P5OUT = 0xB0;
+       P5OUT = 0x00;
 
        //configure port 6 (capture input - TA2)
        P6DIR = 0x00;
        P6SEL0 = 0xB0;
        P6SEL1 = 0x00;
-       P6OUT = 0xB0;
+       P6OUT = 0x00;
 
        //configure port 7 (capture input - TA1)
        P7DIR = 0x00;
        P7SEL0 = 0xF0;
        P7SEL1 = 0x00;
-       P7OUT = 0xF0;
+       P7OUT = 0x00;
 
        //configure port 8 (unused)
        P8DIR  = 0xFF;   //all outputs
