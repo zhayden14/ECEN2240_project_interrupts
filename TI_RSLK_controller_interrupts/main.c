@@ -11,6 +11,12 @@
 
 #include "msp.h"
 
+void timing1(void){}
+//void timing2(void){}
+//void timing3(void){}
+//void timing4(void){}
+
+void bump(void){}
 
 int calibration[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 //calibration data for the line follower sensor
@@ -42,8 +48,8 @@ int PWMleft, PWMright;
        * 6     unused
        * 7     unused
        *
-       *
-       *0      7:
+       *        7:
+       *0
        *1
        *2
        *3
@@ -55,10 +61,42 @@ int PWMleft, PWMright;
 
 //-----------Interrupt handlers--------------------------------------------
 
+//timing interrupts
+//timer3 reset
+void TA3_0_IRQHandler(void){
+    //reset interrupt flag
 
+    //
+}
 
+//timer3 Compare
+void TA3_N_IRQHandler(void){
+    //reset interrupt flag + copy the TA3IV register
+    short iv = TA3IV;
 
+    switch(iv){
+    case 0x02:
+        timing1();
+        break;
+//    case 0x04:
+//        timing2();
+//        break;
+//    case 0x06:
+//        timing3();
+//        break;
+//    case 0x08:
+//        timing4();
+//        break;
+    }
 
+}
+
+//bump switch interrupt handler
+void PORT4_IRQHandler(void){
+    //repeated interrupts read through P4IV
+    //or
+    //one ISR that detects all switch presses?
+}
 
 
 //-----------Initialization code-------------------------------------------
@@ -139,6 +177,10 @@ void main(void)
        P10SEL0 = 0x00;   //as GPIO
        P10SEL1 = 0x00;   //minimize power
 
+       //enable interrupts
+       NVIC_EnableIRQ(PORT4_IRQn);
+       NVIC_EnableIRQ(TA3_0_IRQn);
+       NVIC_EnableIRQ(TA3_N_IRQn);
 
 
 //----------------infinite loop-----------------------------------
