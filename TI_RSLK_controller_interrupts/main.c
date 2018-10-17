@@ -87,6 +87,8 @@ void main(void)
        TIMER_A2->CCR[0] = 0xFFFF;
        TIMER_A2->CCTL[1] = 0x8900;//capture mode (falling edge), CCI1A, SCS=1,
        TIMER_A2->CCTL[2] = 0x8900;//outmode: out bit, no interrupts
+       TIMER_A2->CCTL[3] = 0x8900;
+       TIMER_A2->CCTL[4] = 0x8900;
        TIMER_A2->CTL = 0x0210;
 
        //configure Timer A3
