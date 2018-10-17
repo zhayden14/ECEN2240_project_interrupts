@@ -140,7 +140,7 @@ void main(void)
        TIMER_A2->CCTL[4] = 0x8900;
        TIMER_A2->CTL = 0x0210;
 
-       //configure Timer A3 (general-purpose timing) [change to continuous mode]
+       //configure Timer A3 (general-purpose timing)
        TIMER_A3->CCTL[0] = 0x0080;    // CCI0 toggle
        TIMER_A3->CCR[0] =  1000;    // Period of about 100 Hz
        TIMER_A3->EX0 =     0x0002;    // Divide by 3
