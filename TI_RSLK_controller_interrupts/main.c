@@ -1,8 +1,11 @@
-/*
+/* TI RSLK Controller (Interrupts)
+ * Zachary Hayden, University of Colorado at Boulder
  *
- * Zachary Hayden
+ * The purpose of this code is to provide a basic set of ISRs
+ * that provide all required information and timing to control
+ * the robot car from TI's RSLK
  *
- *
+ * The target is the MSP432P401R included in the RSLK
  */
 
 
@@ -18,7 +21,8 @@ int PWMleft0, PWMright0;
 int PWMleft, PWMright;
 //current PWM values for the motors
 
-//clock system control
+//clock system control:
+//default for MSP-EXP432P401R: 3MHz SMCLK
 
 //Timer A0: PWM generation
 //port 2: motor control
@@ -73,7 +77,7 @@ void main(void)
        TIMER_A0->CCR[2] =  500;
        TIMER_A0->CTL =     0x0250;    // up mode, divide by 1
 
-       //configure Timer A1
+       //configure Timer A1 (capture 0-3)
        TIMER_A1->CCTL[0] = 0x0080;        //compare mode
        TIMER_A1->CCR[0] = 0xFFFF;    //maximum count range
        TIMER_A1->CCTL[1] = 0x8900;//capture mode (falling edge), CCI1A, SCS=1,
@@ -82,7 +86,7 @@ void main(void)
        TIMER_A1->CCTL[4] = 0x8900;
        TIMER_A1->CTL = 0x0210;//SMCLK/1(3MHz), up mode, no interrupts
 
-       //configure Timer A2
+       //configure Timer A2 (capture 4-7)
        TIMER_A2->CCTL[0] = 0x0080;
        TIMER_A2->CCR[0] = 0xFFFF;
        TIMER_A2->CCTL[1] = 0x8900;//capture mode (falling edge), CCI1A, SCS=1,
@@ -91,23 +95,52 @@ void main(void)
        TIMER_A2->CCTL[4] = 0x8900;
        TIMER_A2->CTL = 0x0210;
 
-       //configure Timer A3
+       //configure Timer A3 (general-purpose timing)
        TIMER_A3->CCTL[0] = 0x0080;    // CCI0 toggle
        TIMER_A3->CCR[0] =  1000;    // Period of about 100 Hz
        TIMER_A3->EX0 =     0x0002;    // Divide by 3
        TIMER_A3->CCTL[1] = 0x0040;    // CCR1 toggle/reset
-       TIMER_A3->CCR[1] =  20;         //after 200 counts, GPIO->input
+       TIMER_A3->CCR[1] =  20;         //after 20 counts, GPIO->input
        //TIMER_A3->CCTL[2] = 0x0040;
        //TIMER_A3->CCR[2] =  500;
        TIMER_A3->CTL =     0x0210;    // up mode, divide by 1
 
        //configure GPIO pins
+       //configure port 1 (red LED, Motor Control)
+
+       //configure port 2 (RGB LED, PWM out)
        P2DIR = 0x3F;    //first 6 pins in port are outputs
        P2SEL0 = 0x30;   //pins 4 and 5 are PWM from TA0
        P2SEL1 &= ~0x3F;
        P2DS   = 0x3F;
        P2OUT &= 0x0F;
+       //configure port 3 (velocity sensor input)
 
-       //infinite loop
+       //configure port 4 (bump switch input)
+
+       //configure port 5 (capture input)
+
+       //configure port 6 (capture input)
+
+       //configure port 7 (capture input)
+
+       //configure port 8 (unused)
+       P8DIR  = 0xFF;   //all outputs
+       P8SEL0 = 0x00;   //as GPIO
+       P8SEL1 = 0x00;   //minimize power
+
+       //configure port 9 (unused)
+       P9DIR  = 0xFF;   //all outputs
+       P9SEL0 = 0x00;   //as GPIO
+       P9SEL1 = 0x00;   //minimize power
+
+       //configure port 10 (unused)
+       P10DIR  = 0xFF;   //all outputs
+       P10SEL0 = 0x00;   //as GPIO
+       P10SEL1 = 0x00;   //minimize power
+
+
+
+//----------------infinite loop-----------------------------------
        while(1){}
 }
