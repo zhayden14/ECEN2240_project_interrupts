@@ -32,23 +32,26 @@ void timing0(void){
     P7SEL0 = 0x00;
 
     //set ports 5, 6, 7 to outputs
+    P7OUT = 0xFF;
     P5DIR = 0xB0;
     P6DIR = 0xB0;
     P7DIR = 0xF0;
 
 }
 void timing1(void){
-    //set pin function to capture
-    P5SEL0 = 0xB0;
-    P6SEL0 = 0xB0;
-    P7SEL0 = 0xF0;
-
     //set ports 5,6,7 to inputs
     P5DIR = 0x00;
     P6DIR = 0x00;
     P7DIR = 0x00;
 
+    //set pin function to capture
+    P5SEL0 = 0xB0;
+    P6SEL0 = 0xB0;
+    P7SEL0 = 0xF0;
+
     //start Timers 1 and 2
+    TIMER_A1->CTL |= BIT2;
+    TIMER_A2->CTL |= BIT2;
 
 }
 //void timing2(void){}
@@ -108,12 +111,12 @@ void TA3_N_IRQHandler(void){
     short iv = TIMER_A3->IV;
 
     //decide what timing actions to take
-    switch(iv){
-    case 0x02:
+//    switch(iv){
+//    case 0x02:
         //these functions are defined at the top of the file
         //to change behavior, you should modify these instead of the ISRs
         timing1();
-        break;
+//        break;
 //    case 0x04:
 //        timing2();
 //        break;
@@ -123,7 +126,7 @@ void TA3_N_IRQHandler(void){
 //    case 0x08:
 //        timing4();
 //        break;
-    }
+//    }
 
 }
 
@@ -171,10 +174,10 @@ void main(void)
        TIMER_A2->CTL = 0x0210;
 
        //configure Timer A3 (general-purpose timing) [change to continuous mode]
-       TIMER_A3->CCTL[0] = 0x0080;    // CCI0 toggle
-       TIMER_A3->CCR[0] =  1000;    // Period of about 100 Hz
+       TIMER_A3->CCTL[0] = 0x0090;    // CCI0 toggle
+       TIMER_A3->CCR[0] =  10000;    // Period of about 100 Hz
        TIMER_A3->EX0 =     0x0002;    // Divide by 3
-       TIMER_A3->CCTL[1] = 0x0040;    // CCR1 toggle/reset
+       TIMER_A3->CCTL[1] = 0x0050;    // CCR1 toggle/reset
        TIMER_A3->CCR[1] =  20;         //after 20 counts, GPIO->input
        //TIMER_A3->CCTL[2] = 0x0040;
        //TIMER_A3->CCR[2] =  500;
@@ -184,11 +187,11 @@ void main(void)
        //configure port 1 (red LED, Motor Control)
 
        //configure port 2 (RGB LED, PWM out)
-       P2DIR = 0x3F;    //first 6 pins in port are outputs
-       P2SEL0 = 0x30;   //pins 4 and 5 are PWM from TA0
-       P2SEL1 &= ~0x3F;
-       P2DS   = 0x3F;
-       P2OUT &= 0x0F;
+       //P2DIR = 0x3F;    //first 6 pins in port are outputs
+       //P2SEL0 = 0x30;   //pins 4 and 5 are PWM from TA0
+       //P2SEL1 &= ~0x3F;
+       //P2DS   = 0x3F;
+       //P2OUT &= 0x0F;
 
        //configure port 3 (velocity sensor input) (not yet implemented)
        P3DIR = 0xFF;    //all outputs
@@ -202,18 +205,21 @@ void main(void)
 
        //configure port 5 (capture input - TA2)
        P5DIR = 0x00;
+       P5DS = 0xB0;
        P5SEL0 = 0x0B0;
        P5SEL1 = 0x00;
        P5OUT = 0xB0;
 
        //configure port 6 (capture input - TA2)
        P6DIR = 0x00;
+       P6DS = 0xB0;
        P6SEL0 = 0xB0;
        P6SEL1 = 0x00;
        P6OUT = 0xB0;
 
        //configure port 7 (capture input - TA1)
        P7DIR = 0x00;
+       P7DS = 0xF0;
        P7SEL0 = 0xF0;
        P7SEL1 = 0x00;
        P7OUT = 0xF0;
@@ -240,5 +246,8 @@ void main(void)
 
 
 //----------------infinite loop-----------------------------------
-       while(1){}
+       int i;
+       while(1){
+           for(i = 0; i < 1000; i++){}
+       }
 }
