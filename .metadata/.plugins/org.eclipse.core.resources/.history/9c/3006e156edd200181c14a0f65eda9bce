@@ -20,7 +20,7 @@ int reflect[8];
 //reflectance data for the line follower sensor
 int PWMchgL[8] = {0,0,0,0,0,0,0,0}, PWMchgR[8] = {0,0,0,0,0,0,0,0};
 //change in PWM of each motor due to each sensor
-int PWMleft0 = 0, PWMright0 = 0;
+int PWMleft0, PWMright0;
 //default PWM values for the motors
 int PWMleft, PWMright;
 //current PWM values for the motors
@@ -57,14 +57,14 @@ void timing0(void){
     if(reflect[0] > thresh){
 
     }
-    else if(0){
+    else{
 
     }
 
     if(reflect[1] > thresh){
 
     }
-    else if(0){
+    else{
 
     }
 
@@ -292,7 +292,7 @@ void main(void)
     //configure Timer A0 (modify!)
     TIMER_A0->CCTL[0] = 0x0080;    // CCI0 toggle
     TIMER_A0->CCR[0] =  1000;    // Period or about 10 kHz
-    //TIMER_A0->EX0 =     0x0005;    // Divide by 3
+    TIMER_A0->EX0 =     0x0005;    // Divide by 3
     TIMER_A0->CCTL[1] = 0x0040;    // CCR1 toggle/reset
     TIMER_A0->CCTL[2] = 0x0040;
     TIMER_A0->CCR[1] =  500;    // CCR1 duty cycle is 50%
