@@ -18,10 +18,14 @@ int calibration[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 //calibration data for the line follower sensor
 int reflect[8];
 //reflectance data for the line follower sensor
+int PWMchgL[8], PWMchgR[8];
+//change in PWM of each motor due to each sensor
 int PWMleft0, PWMright0;
 //default PWM values for the motors
 int PWMleft, PWMright;
 //current PWM values for the motors
+int thresh;
+//threshold above background when sensors adjust PWM
 
 
 #include "msp.h"
@@ -42,6 +46,46 @@ void timing0(void){
     P6DIR = 0xB0;
     P7DIR = 0xF0;
 
+    //motor speed control
+    //center around calibration value + take absolute value
+    for(i = 0; i < 8; i++){
+        reflect[i] -= calibration[i];
+        if(reflect[i] < 0) reflect[i] *= -1;
+    }
+
+    //calc changes in PWM
+    if(reflect[0] > thresh){
+
+    }
+    if(reflect[1] > thresh){
+
+    }
+    if(reflect[2] > thresh){
+
+    }
+    if(reflect[3] > thresh){
+
+    }
+    if(reflect[4] > thresh){
+
+    }
+    if(reflect[5] > thresh){
+
+    }
+    if(reflect[6] > thresh){
+
+    }
+    if(reflect[7] > thresh){
+
+    }
+
+    //apply changes in PWM
+    for(i = 0; i < 8; i++){
+        PWMleft += PWMchgL[i];
+        PWMright += PWMchgR[i];
+    }
+    TIMER_A0->CCR[1] = PWMleft;
+    TIMER_A0->CCR[2] = PWMright;
 }
 void timing1(void){
     //set ports 5,6,7 to inputs
@@ -88,6 +132,7 @@ void timing1(void){
 void bump(void){
     //stop motors
     //sleep controls on
+    P3OUT &= 0b11111100;
 
     //wait for specified time
     //(using systick)
@@ -95,9 +140,15 @@ void bump(void){
     while(*systick_current_value_reg > systick_target){}
 
     //back up
-    //reverse motor direction
     //set motor speed
+    TIMER_A0->CCR[1] = 0;
+    TIMER_A0->CCR[2] = 0;
+    //reverse motor direction
+    P3OUT &= 0b11110011;
+    P3OUT |= 0b00000011;
     //wait
+    systick_target = (*systick_current_value_reg - 10000)%16777216;
+    while(*systick_current_value_reg > systick_target){}
 
     //turn right
 
@@ -194,109 +245,122 @@ void main(void)
 {
     WDT_A->CTL = WDT_A_CTL_PW | WDT_A_CTL_HOLD;     // stop watchdog timer
 
-       //configure Timer A0 (modify!)
-       TIMER_A0->CCTL[0] = 0x0080;    // CCI0 toggle
-       TIMER_A0->CCR[0] =  1000;    // Period or about 10 kHz
-       TIMER_A0->EX0 =     0x0005;    // Divide by 3
-       TIMER_A0->CCTL[1] = 0x0040;    // CCR1 toggle/reset
-       TIMER_A0->CCTL[2] = 0x0040;
-       TIMER_A0->CCR[1] =  500;    // CCR1 duty cycle is 50%
-       TIMER_A0->CCR[2] =  500;
-       TIMER_A0->CTL =     0x0250;    // up mode, divide by 1
+    //port map TA0 CCR3,4 to 2.0 and 2.2 for RGB LED
+    //write access key
+    PMAPKEYID = 0x96A5;
+    //red LED to ccr3
+    //should work b/c little endian P2MAP0 is the less significant byte
+    P2MAP01 = PM_TA0CCR3A;
+    //blue LED to ccr4
+    P2MAP23 = PM_TA0CCR4A;
+    //invalid key to stop reconfiguration
+    PMAPKEYID = 0x0033;
 
-       //configure Timer A1 (capture 0-3)
-       TIMER_A1->CCTL[0] = 0x0080;        //compare mode
-       TIMER_A1->CCR[0] = 0xFFFF;    //maximum count range
-       TIMER_A1->CCTL[1] = 0x8900;//capture mode (falling edge), CCI1A, SCS=1,
-       TIMER_A1->CCTL[2] = 0x8900;//outmode: out bit, no interrupts
-       TIMER_A1->CCTL[3] = 0x8900;
-       TIMER_A1->CCTL[4] = 0x8900;
-       TIMER_A1->CTL = 0x0210;//SMCLK/1(3MHz), up mode, no interrupts
 
-       //configure Timer A2 (capture 4-7)
-       TIMER_A2->CCTL[0] = 0x0080;
-       TIMER_A2->CCR[0] = 0xFFFF;
-       TIMER_A2->CCTL[1] = 0x8900;//capture mode (falling edge), CCI1A, SCS=1,
-       TIMER_A2->CCTL[2] = 0x8900;//outmode: out bit, no interrupts
-       TIMER_A2->CCTL[3] = 0x8900;
-       TIMER_A2->CCTL[4] = 0x8900;
-       TIMER_A2->CTL = 0x0210;
 
-       //configure Timer A3 (general-purpose timing) [change to continuous mode]
-       TIMER_A3->CCTL[0] = 0x0090;    // CCI0 toggle
-       TIMER_A3->CCR[0] =  10000;    // Period of about 100 Hz
-       TIMER_A3->EX0 =     0x0002;    // Divide by 3
-       TIMER_A3->CCTL[1] = 0x0050;    // CCR1 toggle/reset
-       TIMER_A3->CCR[1] =  20;         //after 20 counts, GPIO->input
-       //TIMER_A3->CCTL[2] = 0x0040;
-       //TIMER_A3->CCR[2] =  500;
-       TIMER_A3->CTL =     0x0210;    // up mode, divide by 1
+    //configure Timer A0 (modify!)
+    TIMER_A0->CCTL[0] = 0x0080;    // CCI0 toggle
+    TIMER_A0->CCR[0] =  1000;    // Period or about 10 kHz
+    TIMER_A0->EX0 =     0x0005;    // Divide by 3
+    TIMER_A0->CCTL[1] = 0x0040;    // CCR1 toggle/reset
+    TIMER_A0->CCTL[2] = 0x0040;
+    TIMER_A0->CCR[1] =  500;    // CCR1 duty cycle is 50%
+    TIMER_A0->CCR[2] =  500;
+    TIMER_A0->CTL =     0x0250;    // up mode, divide by 1
 
-       //configure GPIO pins
-       //configure port 1 (red LED, Motor Control)
+    //configure Timer A1 (capture 0-3)
+    TIMER_A1->CCTL[0] = 0x0080;        //compare mode
+    TIMER_A1->CCR[0] = 0xFFFF;    //maximum count range
+    TIMER_A1->CCTL[1] = 0x8900;//capture mode (falling edge), CCI1A, SCS=1,
+    TIMER_A1->CCTL[2] = 0x8900;//outmode: out bit, no interrupts
+    TIMER_A1->CCTL[3] = 0x8900;
+    TIMER_A1->CCTL[4] = 0x8900;
+    TIMER_A1->CTL = 0x0210;//SMCLK/1(3MHz), up mode, no interrupts
 
-       //configure port 2 (RGB LED, PWM out)
-       //P2DIR = 0x3F;    //first 6 pins in port are outputs
-       //P2SEL0 = 0x30;   //pins 4 and 5 are PWM from TA0
-       //P2SEL1 &= ~0x3F;
-       //P2DS   = 0x3F;
-       //P2OUT &= 0x0F;
+    //configure Timer A2 (capture 4-7)
+    TIMER_A2->CCTL[0] = 0x0080;
+    TIMER_A2->CCR[0] = 0xFFFF;
+    TIMER_A2->CCTL[1] = 0x8900;//capture mode (falling edge), CCI1A, SCS=1,
+    TIMER_A2->CCTL[2] = 0x8900;//outmode: out bit, no interrupts
+    TIMER_A2->CCTL[3] = 0x8900;
+    TIMER_A2->CCTL[4] = 0x8900;
+    TIMER_A2->CTL = 0x0210;
 
-       //configure port 3 (velocity sensor input) (not yet implemented)
-       P3DIR = 0xFF;    //all outputs
-       P3SEL0 = 0x00;   //as gpio
-       P3SEL1 = 0x00;   //minimize power
+    //configure Timer A3 (general-purpose timing) [change to continuous mode]
+    TIMER_A3->CCTL[0] = 0x0090;    // CCI0 toggle
+    TIMER_A3->CCR[0] =  10000;    // Period of about 100 Hz
+    TIMER_A3->EX0 =     0x0002;    // Divide by 3
+    TIMER_A3->CCTL[1] = 0x0050;    // CCR1 toggle/reset
+    TIMER_A3->CCR[1] =  20;         //after 20 counts, GPIO->input
+    //TIMER_A3->CCTL[2] = 0x0040;
+    //TIMER_A3->CCR[2] =  500;
+    TIMER_A3->CTL =     0x0210;    // up mode, divide by 1
 
-       //configure port 4 (bump switch input)
-       P4DIR = 0x00;    //All pins are inputs
-       P4SEL0 = 0x00;   //all pins are configured for GPIO
-       P4SEL1 = 0x00;   //
+    //configure GPIO pins
+    //configure port 1 (red LED, Motor Control)
 
-       //configure port 5 (capture input - TA2)
-       P5DIR = 0x00;
-       P5DS = 0xB0;
-       P5SEL0 = 0x0B0;
-       P5SEL1 = 0x00;
-       P5OUT = 0xB0;
+    //configure port 2 (RGB LED, PWM out)
+    //P2DIR = 0x3F;    //first 6 pins in port are outputs
+    //P2SEL0 = 0x30;   //pins 4 and 5 are PWM from TA0
+    //P2SEL1 &= ~0x3F;
+    //P2DS   = 0x3F;
+    //P2OUT &= 0x0F;
 
-       //configure port 6 (capture input - TA2)
-       P6DIR = 0x00;
-       P6DS = 0xB0;
-       P6SEL0 = 0xB0;
-       P6SEL1 = 0x00;
-       P6OUT = 0xB0;
+    //configure port 3 (velocity sensor input) (not yet implemented)
+    P3DIR = 0xFF;    //all outputs
+    P3SEL0 = 0x00;   //as gpio
+    P3SEL1 = 0x00;   //minimize power
 
-       //configure port 7 (capture input - TA1)
-       P7DIR = 0x00;
-       P7DS = 0xF0;
-       P7SEL0 = 0xF0;
-       P7SEL1 = 0x00;
-       P7OUT = 0xF0;
+    //configure port 4 (bump switch input)
+    P4DIR = 0x00;    //All pins are inputs
+    P4SEL0 = 0x00;   //all pins are configured for GPIO
+    P4SEL1 = 0x00;   //
 
-       //configure port 8 (unused)
-       P8DIR  = 0xFF;   //all outputs
-       P8SEL0 = 0x00;   //as GPIO
-       P8SEL1 = 0x00;   //minimize power
+    //configure port 5 (capture input - TA2)
+    P5DIR = 0x00;
+    P5DS = 0xB0;
+    P5SEL0 = 0x0B0;
+    P5SEL1 = 0x00;
+    P5OUT = 0xB0;
 
-       //configure port 9 (unused)
-       P9DIR  = 0xFF;   //all outputs
-       P9SEL0 = 0x00;   //as GPIO
-       P9SEL1 = 0x00;   //minimize power
+    //configure port 6 (capture input - TA2)
+    P6DIR = 0x00;
+    P6DS = 0xB0;
+    P6SEL0 = 0xB0;
+    P6SEL1 = 0x00;
+    P6OUT = 0xB0;
 
-       //configure port 10 (unused)
-       P10DIR  = 0xFF;   //all outputs
-       P10SEL0 = 0x00;   //as GPIO
-       P10SEL1 = 0x00;   //minimize power
+    //configure port 7 (capture input - TA1)
+    P7DIR = 0x00;
+    P7DS = 0xF0;
+    P7SEL0 = 0xF0;
+    P7SEL1 = 0x00;
+    P7OUT = 0xF0;
 
-       //enable interrupts
-       NVIC_EnableIRQ(PORT4_IRQn);
-       NVIC_EnableIRQ(TA3_0_IRQn);
-       NVIC_EnableIRQ(TA3_N_IRQn);
+    //configure port 8 (unused)
+    P8DIR  = 0xFF;   //all outputs
+    P8SEL0 = 0x00;   //as GPIO
+    P8SEL1 = 0x00;   //minimize power
+
+    //configure port 9 (unused)
+    P9DIR  = 0xFF;   //all outputs
+    P9SEL0 = 0x00;   //as GPIO
+    P9SEL1 = 0x00;   //minimize power
+
+    //configure port 10 (unused)
+    P10DIR  = 0xFF;   //all outputs
+    P10SEL0 = 0x00;   //as GPIO
+    P10SEL1 = 0x00;   //minimize power
+
+    //enable interrupts
+    NVIC_EnableIRQ(PORT4_IRQn);
+    NVIC_EnableIRQ(TA3_0_IRQn);
+    NVIC_EnableIRQ(TA3_N_IRQn);
 
 
 //----------------infinite loop-----------------------------------
-       int i;
-       while(1){
-           for(i = 0; i < 1000; i++){}
-       }
+    int i;
+    while(1){
+        for(i = 0; i < 1000; i++){}
+    }
 }
