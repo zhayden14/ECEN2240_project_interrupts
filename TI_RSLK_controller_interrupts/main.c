@@ -8,6 +8,11 @@
  * The target is the MSP432P401R included in the RSLK
  */
 
+//same register definitions as in example
+volatile long *systick_control_reg = (volatile long *)0xE000E010 ;  // STCSR
+volatile long *systick_reload_value_reg =  (volatile long *)0xE000E014 ;  // STRVR
+volatile long *systick_current_value_reg = (volatile long *)0xE000E018 ;  // STCVR
+
 
 int calibration[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 //calibration data for the line follower sensor
@@ -58,7 +63,51 @@ void timing1(void){
 //void timing3(void){}
 //void timing4(void){}
 
-void bump(void){}
+/*void bump(void){
+    //extra credit
+    //stop motors
+    TIMER_A0->CCR[1] = 0;
+    TIMER_A0->CCR[2] = 0;
+
+    //wait for specified time
+    //(using systick)
+    unsigned long systick_target = (*systick_current_value_reg - 10000)%16777216;
+    while(*systick_current_value_reg > systick_target){}
+
+    //back up
+
+
+    //turn right
+
+
+    //go forwards (release control)
+
+
+}*/
+
+void bump(void){
+    //stop motors
+    //sleep controls on
+
+    //wait for specified time
+    //(using systick)
+    unsigned long systick_target = (*systick_current_value_reg - 10000)%16777216;
+    while(*systick_current_value_reg > systick_target){}
+
+    //back up
+    //reverse motor direction
+    //set motor speed
+    //wait
+
+    //turn right
+
+    //go forward
+
+    //turn left
+
+    //go forward and release control
+
+}
 
 
 //clock system control:
