@@ -15,20 +15,20 @@ Hardware setup:
 
 Summary of pin connections:
 
-Pin|Port   1          2                             3     4             5
+Pin|Port   1          2                             3                       4             5   6
 
-0          Red LED    Left Motor Sleep              -     Bump Switch   -
+0          Red LED    Red LED (RGB)                 Left Motor Sleep        Bump Switch   -   -
 
-1          -          Right Motor Sleep             -     Bump Switch   -
+1          -          Green LED (RGB)               Right Motor Sleep       Bump Switch   -   -
 
-2          -          Left Motor Direction          -     Bump Switch   -
+2          -          Blue LED (RGB)                Left Motor Direction    Bump Switch   -   -
 
-3          -          Right Motor Direction         -     Bump Switch   -
+3          -          -                             Right Motor Direction   Bump Switch   -   -
 
-4          -          Left Motor PWM (TA0 CCR1)     -     Bump Switch   -
+4          -          Left Motor PWM (TA0 CCR1)     -                       Bump Switch   -   -
 
-5          -          Right Motor PWM (TA0 CCR2)    -     Bump Switch   -
+5          -          Right Motor PWM (TA0 CCR2)    -                       Bump Switch   -   -
 
-6          -          -                             -     -             -
+6          -          -                             -                       -             -   -
 
-7          -          -                             -     -             -
+7          -          -                             -                       -             -   -
