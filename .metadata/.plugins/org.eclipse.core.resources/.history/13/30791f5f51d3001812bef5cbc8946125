@@ -8,8 +8,6 @@
  * The target is the MSP432P401R included in the RSLK
  */
 
-#include "msp.h"
-
 //same register definitions as in example
 volatile long *systick_control_reg = (volatile long *)0xE000E010 ;  // STCSR
 volatile long *systick_reload_value_reg =  (volatile long *)0xE000E014 ;  // STRVR
@@ -29,9 +27,8 @@ int PWMleft, PWMright;
 int thresh;
 //threshold above background when sensors adjust PWM
 
-void inline setRightPWM(int v);
-void inline setLeftPWM(int v);
 
+#include "msp.h"
 
 void timing0(void){
     //copy previous reflectance data
@@ -140,6 +137,28 @@ void timing1(void){
 //void timing2(void){}
 //void timing3(void){}
 //void timing4(void){}
+
+/*void bump(void){
+    //extra credit
+    //stop motors
+    TIMER_A0->CCR[1] = 0;
+    TIMER_A0->CCR[2] = 0;
+
+    //wait for specified time
+    //(using systick)
+    unsigned long systick_target = (*systick_current_value_reg - 10000)%16777216;
+    while(*systick_current_value_reg > systick_target){}
+
+    //back up
+
+
+    //turn right
+
+
+    //go forwards (release control)
+
+
+}*/
 
 void bump(void){
     //stop motors
@@ -276,8 +295,8 @@ void main(void)
     //TIMER_A0->EX0 =     0x0005;    // Divide by 3
     TIMER_A0->CCTL[1] = 0x0040;    // CCR1 toggle/reset
     TIMER_A0->CCTL[2] = 0x0040;
-    TIMER_A0->CCR[1] =  128;    // CCR1 duty cycle is 50%
-    TIMER_A0->CCR[2] =  128;
+    TIMER_A0->CCR[1] = 128;    // CCR1 duty cycle is 50%
+    TIMER_A0->CCR[2] = 128;
     TIMER_A0->CTL =     0x0250;    // up mode, divide by 1
 
     //configure Timer A1 (capture 0-3)
@@ -375,28 +394,4 @@ void main(void)
     while(1){
         for(i = 0; i < 1000; i++){}
     }
-}
-
-//----------------utility functions--------------------------------
-
-void inline setRightPWM(int v){
-    if(v < 0){
-        v *= -1;
-        //change direction
-    }
-    else{
-        //change direction
-    }
-    TIMER_A0->CCR[n] = v;
-}
-
-void inline setLeftPWM(int v){
-    if(v < 0){
-        v *= -1;
-        //change direction
-    }
-    else{
-        //change direction
-    }
-    Timer_A0->CCR[n] = v;
 }
