@@ -15,7 +15,7 @@ Hardware setup:
 
 Summary of pin connections:
 
-Pin|Port   1          2                             3                       4             5   6
+Pin|Port   1          2                             10                       4             5   6
 
 0          Red LED    Red LED (RGB)                 Left Motor Sleep        Bump Switch   -   -
 
