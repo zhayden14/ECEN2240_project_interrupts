@@ -22,8 +22,6 @@ int PWMleft, PWMright;
 //current PWM values for the motors
 int thresh = 512;
 //threshold above background when sensors adjust PWM
-char ctlstate = 0;
-//line following control
 unsigned long cycles = 0;
 
 void inline setRightPWM(int v);
@@ -72,10 +70,8 @@ void timing0(void){
         //TIMER_A0->CCR[3]++;
         //TIMER_A0->CCR[4]--;
 
-        if(!ctlstate){
-            setLeftPWM(PWMleft);
-            setRightPWM(PWMright);
-        }
+        setLeftPWM(PWMleft);
+        setRightPWM(PWMright);
     }
 }
 void timing1(void){
@@ -103,9 +99,6 @@ void bump(void){
     //sleep controls on
     P3OUT &= 0b11111100;
 
-    //disable line following
-    ctlstate = 1;
-
     //wait for specified time
     int w;
     for(w = 0; w < 1024; w++){}
@@ -122,20 +115,18 @@ void bump(void){
     for(w = 0; w < 1024; w++){}
 
     //go forward
-    setRightPWM(PWMright0);
+    setPWMRight(PWMright0);
     //wait
     for(w = 0; w < 1024; w++){}
 
     //turn left
-    setLeftPWM(-1*PWMleft0);
+    setPWMleft(-1*PWMleft0);
     //wait
     for(w = 0; w < 1024; w++){}
 
     //go forward and release control
-    setLeftPWM(PWMleft0);
+    setPWMleft(PWMleft0);
 
-    //enable line following
-    ctlstate = 0;
 }
 
 

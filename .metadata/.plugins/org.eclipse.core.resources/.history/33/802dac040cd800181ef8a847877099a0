@@ -122,20 +122,20 @@ void bump(void){
     for(w = 0; w < 1024; w++){}
 
     //go forward
-    setRightPWM(PWMright0);
+    setPWMRight(PWMright0);
     //wait
     for(w = 0; w < 1024; w++){}
 
     //turn left
-    setLeftPWM(-1*PWMleft0);
+    setPWMleft(-1*PWMleft0);
     //wait
     for(w = 0; w < 1024; w++){}
 
     //go forward and release control
-    setLeftPWM(PWMleft0);
+    setPWMleft(PWMleft0);
 
     //enable line following
-    ctlstate = 0;
+
 }
 
 

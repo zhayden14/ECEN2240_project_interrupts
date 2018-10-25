@@ -10,6 +10,12 @@
 
 #include "msp.h"
 
+//same register definitions as in example
+volatile long *systick_control_reg = (volatile long *)0xE000E010 ;  // STCSR
+volatile long *systick_reload_value_reg =  (volatile long *)0xE000E014 ;  // STRVR
+volatile long *systick_current_value_reg = (volatile long *)0xE000E018 ;  // STCVR
+
+
 int calibration[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 //calibration data for the line follower sensor
 int reflect[8];
@@ -22,8 +28,6 @@ int PWMleft, PWMright;
 //current PWM values for the motors
 int thresh = 512;
 //threshold above background when sensors adjust PWM
-char ctlstate = 0;
-//line following control
 unsigned long cycles = 0;
 
 void inline setRightPWM(int v);
@@ -33,7 +37,7 @@ void inline setLeftPWM(int v);
 void timing0(void){
     cycles++;
     //copy previous reflectance data
-    int i;
+    int i, j;
     for(i = 0; i < 4; i++){
         reflect[i] = TIMER_A1->CCR[i+1];
     }
@@ -72,10 +76,8 @@ void timing0(void){
         //TIMER_A0->CCR[3]++;
         //TIMER_A0->CCR[4]--;
 
-        if(!ctlstate){
-            setLeftPWM(PWMleft);
-            setRightPWM(PWMright);
-        }
+        setLeftPWM(PWMleft);
+        setRightPWM(PWMright);
     }
 }
 void timing1(void){
@@ -103,39 +105,27 @@ void bump(void){
     //sleep controls on
     P3OUT &= 0b11111100;
 
-    //disable line following
-    ctlstate = 1;
-
     //wait for specified time
-    int w;
-    for(w = 0; w < 1024; w++){}
+
+
 
     //back up
-    setLeftPWM(-1*PWMleft0);
-    setRightPWM(-1*PWMright0);
+    //set motor speed
+    TIMER_A0->CCR[1] = 0;
+    TIMER_A0->CCR[2] = 0;
+    //reverse motor direction
+    P3OUT &= 0b11110011;
+    P3OUT |= 0b00000011;
     //wait
-    for(w = 0; w < 1024; w++){}
 
     //turn right
-    setLeftPWM(PWMleft0);
-    //wait
-    for(w = 0; w < 1024; w++){}
 
     //go forward
-    setRightPWM(PWMright0);
-    //wait
-    for(w = 0; w < 1024; w++){}
 
     //turn left
-    setLeftPWM(-1*PWMleft0);
-    //wait
-    for(w = 0; w < 1024; w++){}
 
     //go forward and release control
-    setLeftPWM(PWMleft0);
 
-    //enable line following
-    ctlstate = 0;
 }
 
 
@@ -210,7 +200,9 @@ void TA3_N_IRQHandler(void){
 
 //bump switch interrupt handler
 void PORT4_IRQHandler(void){
-    //really need to clear interrupt flag/disable interrupt
+    //repeated interrupts read through P4IV
+    //or
+    //one ISR that detects all switch presses?
     bump();
 }
 
