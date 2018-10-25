@@ -10,7 +10,7 @@
 
 #include "msp.h"
 
-int calibration[8] = {0, 0, 0, 0, 0, 0, 0, 0};
+int calibration[8] = {0, 0, 0, 0, 0, 0, 0, 0}, devmax[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 //calibration data for the line follower sensor
 int reflect[8];
 //reflectance data for the line follower sensor
@@ -21,6 +21,8 @@ int PWMleft, PWMright;
 char ctlstate = 0;
 //line following control
 unsigned long cycles = 0;
+
+int thresh = 128;
 
 void inline setRightPWM(int v);
 void inline setLeftPWM(int v);
@@ -54,8 +56,23 @@ void timing0(void){
             calibration[i] += reflect[i];
         }
     }
-    if(cycles == 17){
+    else if(cycles == 17){
         for(i = 0; i < 8; i++) calibration[i] /= 8;
+    }
+    else if((cycles > 16) && (cycles < 25)){
+        for(i = 0; i < 8; i++){
+            reflect[i] -= calibration[i];
+            if(reflect[i] < 0) reflect[i] *= -1;
+            if(reflect[i] > devmax[i]) devmax[i] = reflect[i];
+        }
+    }
+    if(cycles == 25){
+        //enable bump switches
+        P4IFG = 0x00;
+        //NVIC_EnableIRQ(PORT4_IRQn);
+        //start motors
+        setLeftPWM(PWMleft0);
+        setRightPWM(PWMright0);
     }
     else{
 
@@ -65,8 +82,40 @@ void timing0(void){
             reflect[i] -= calibration[i];
             if(reflect[i] < 0) reflect[i] *= -1;
         }
-        //TIMER_A0->CCR[3]++;
-        //TIMER_A0->CCR[4]--;
+
+        TIMER_A0->CCR[3] = reflect[5]/512;
+        TIMER_A0->CCR[4] = reflect[2]/512;
+
+        //PWMleft = 8*reflect[0]+4*reflect[1]+2*reflect[2]+reflect[3]-reflect[4]-2*reflect[5]-4*reflect[6]-8*reflect[7];
+        //PWMright = -8*reflect[0]-4*reflect[1]-2*reflect[2]-reflect[3]+reflect[4]+2*reflect[5]+4*reflect[6]+8*reflect[7];
+        if(reflect[0] > 2048){
+            PWMleft = 32;
+            PWMright = 4;
+        }
+        else if(reflect[7] > 2048){
+            PWMleft = 4;
+            PWMright = 32;
+        }
+        else if(reflect[1] > 2048){
+            PWMleft = 32;
+            PWMright = 8;
+        }
+        else if(reflect[6] > 2048){
+            PWMleft = 8;
+            PWMright = 32;
+        }
+        else if(reflect[2] > 2048){
+            PWMleft = 32;
+            PWMright = 16;
+        }
+        else if(reflect[5] > 2048){
+            PWMleft = 16;
+            PWMright = 32;
+        }
+        else{
+            PWMleft = 32;
+            PWMright = 32;
+        }
 
         if(!ctlstate){
             setLeftPWM(PWMleft);
@@ -97,35 +146,41 @@ void timing1(void){
 void bump(void){
     //stop motors
     //sleep controls on
-    P3OUT &= 0b11111100;
+    setLeftPWM(0);
+    setRightPWM(0);
 
     //disable line following
     ctlstate = 1;
 
     //wait for specified time
     int w;
-    for(w = 0; w < 1024; w++){}
+    for(w = 0; w < 262144; w++){}
 
     //back up
     setLeftPWM(-1*PWMleft0);
     setRightPWM(-1*PWMright0);
     //wait
-    for(w = 0; w < 1024; w++){}
+    for(w = 0; w < 262144; w++){}
 
     //turn right
     setLeftPWM(PWMleft0);
     //wait
-    for(w = 0; w < 1024; w++){}
+    for(w = 0; w < 262144; w++){}
+
+    //clear interrupt flags
+    P4IFG = 0x00;
+    //reenable interrupt
+    NVIC_EnableIRQ(PORT4_IRQn);
 
     //go forward
     setRightPWM(PWMright0);
     //wait
-    for(w = 0; w < 1024; w++){}
+    for(w = 0; w < 1048576; w++){}
 
     //turn left
     setLeftPWM(-1*PWMleft0);
     //wait
-    for(w = 0; w < 1024; w++){}
+    for(w = 0; w < 524288; w++){}
 
     //go forward and release control
     setLeftPWM(PWMleft0);
@@ -175,6 +230,8 @@ void TA3_0_IRQHandler(void){
     //reset interrupt flag
     TIMER_A3->CCTL[0] &= ~BIT0;
 
+    //in = P4IN;
+
     //perform actions
     timing0();
 }
@@ -206,7 +263,9 @@ void TA3_N_IRQHandler(void){
 
 //bump switch interrupt handler
 void PORT4_IRQHandler(void){
-    //really need to clear interrupt flag/disable interrupt
+    //disable interrupt
+    NVIC_DisableIRQ(PORT4_IRQn);
+    //will clear flags and reenable interrupt later
     bump();
 }
 
@@ -238,8 +297,8 @@ void main(void)
     TIMER_A0->CCTL[2] = 0x00E0;
     TIMER_A0->CCTL[3] = 0x00E0;
     TIMER_A0->CCTL[4] = 0x00E0;
-    TIMER_A0->CCR[1] =  128;    // CCR1 duty cycle is 50%
-    TIMER_A0->CCR[2] =  128;
+    TIMER_A0->CCR[1] =  0;    // CCR1 duty cycle is 50%
+    TIMER_A0->CCR[2] =  0;
     TIMER_A0->CCR[3] =  128;
     TIMER_A0->CCR[4] =  128;
     TIMER_A0->CTL =     0x0250;    // up mode, divide by 1
@@ -276,6 +335,7 @@ void main(void)
     P1DIR  = 0xFF;   //all outputs
     P1SEL0 = 0x00;   //as GPIO
     P1SEL1 = 0x00;   //minimize power
+    P1OUT  = 0x00;
 
     //configure port 2 (RGB LED, PWM out)
     P2DIR = 0xFF;    //pins in port are outputs
@@ -293,6 +353,11 @@ void main(void)
     P4DIR = 0x00;    //All pins are inputs
     P4SEL0 = 0x00;   //all pins are configured for GPIO
     P4SEL1 = 0x00;   //
+    P4REN = 0x3F;    //enable pullup resistors
+    P4OUT  = 0x3F;
+    P4IES = 0x3F;   //interrupt on low to high transition
+    P4IE  = 0x3F;   //interrupts enabled on bump switches
+    P4IFG = 0x00;
 
     //configure port 5 (capture input - TA2)
     P5DIR = 0x00;
@@ -332,7 +397,6 @@ void main(void)
     P10OUT = 0x03;
 
     //enable interrupts
-    //NVIC_EnableIRQ(PORT4_IRQn);
     NVIC_EnableIRQ(TA3_0_IRQn);
     NVIC_EnableIRQ(TA3_N_IRQn);
 
