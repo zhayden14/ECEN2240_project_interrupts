@@ -22,104 +22,63 @@ int reflect[8];
 //reflectance data for the line follower sensor
 int PWMchgL[8] = {0,0,0,0,0,0,0,0}, PWMchgR[8] = {0,0,0,0,0,0,0,0};
 //change in PWM of each motor due to each sensor
-int PWMleft0 = 0, PWMright0 = 0;
+int PWMleft0 = 32, PWMright0 = 32;
 //default PWM values for the motors
 int PWMleft, PWMright;
 //current PWM values for the motors
-int thresh;
+int thresh = 512;
 //threshold above background when sensors adjust PWM
+unsigned long cycles = 0;
 
 void inline setRightPWM(int v);
 void inline setLeftPWM(int v);
 
 
 void timing0(void){
+    cycles++;
     //copy previous reflectance data
-    int i = 0;
-    for(i = 0; i < 4; i++) reflect[i] = TIMER_A1->CCR[i+1];
-    for(i = 4; i < 8; i++) reflect[i] = TIMER_A2->CCR[i-3];
+    int i, j;
+    for(i = 0; i < 4; i++){
+        reflect[i] = TIMER_A1->CCR[i+1];
+    }
+    for(i = 4; i < 8; i++){
+        reflect[i] = TIMER_A2->CCR[i-3];
+    }
+
     //set ports 5, 6, 7 to GPIO
     P5SEL0 = 0x00;
     P6SEL0 = 0x00;
     P7SEL0 = 0x00;
 
     //set ports 5, 6, 7 to outputs
-    P7OUT = 0xFF;
-    P5DIR = 0xB0;
-    P6DIR = 0xB0;
+    //P7OUT = 0xFF;
+    P5DIR = 0xC0;
+    P6DIR = 0xC0;
     P7DIR = 0xF0;
 
-    //motor speed control
-    //center around calibration value + take absolute value
-    for(i = 0; i < 8; i++){
-        reflect[i] -= calibration[i];
-        if(reflect[i] < 0) reflect[i] *= -1;
+    //calibration
+    if((cycles > 8) && (cycles < 17)){
+        for(i = 0; i < 8; i++){
+            calibration[i] += reflect[i];
+        }
     }
-
-    //calc changes in PWM
-    if(reflect[0] > thresh){
-
-    }
-    else if(0){
-
-    }
-
-    if(reflect[1] > thresh){
-
-    }
-    else if(0){
-
-    }
-
-    if(reflect[2] > thresh){
-
+    if(cycles == 17){
+        for(i = 0; i < 8; i++) calibration[i] /= 8;
     }
     else{
 
+        //motor speed control
+        //center around calibration value + take absolute value
+        for(i = 0; i < 8; i++){
+            reflect[i] -= calibration[i];
+            if(reflect[i] < 0) reflect[i] *= -1;
+        }
+        //TIMER_A0->CCR[3]++;
+        //TIMER_A0->CCR[4]--;
+
+        setLeftPWM(PWMleft);
+        setRightPWM(PWMright);
     }
-
-    if(reflect[3] > thresh){
-
-    }
-    else{
-
-    }
-
-    if(reflect[4] > thresh){
-
-    }
-    else{
-
-    }
-
-    if(reflect[5] > thresh){
-
-    }
-    else{
-
-    }
-
-    if(reflect[6] > thresh){
-
-    }
-    else{
-
-    }
-
-    if(reflect[7] > thresh){
-
-    }
-    else{
-
-    }
-
-    //apply changes in PWM
-    for(i = 0; i < 8; i++){
-        PWMleft += PWMchgL[i];
-        PWMright += PWMchgR[i];
-    }
-    TIMER_A0->CCR[1] = PWMleft;
-    TIMER_A0->CCR[2] = PWMright;
 }
 void timing1(void){
     //set ports 5,6,7 to inputs
@@ -128,8 +87,8 @@ void timing1(void){
     P7DIR = 0x00;
 
     //set pin function to capture
-    P5SEL0 = 0xB0;
-    P6SEL0 = 0xB0;
+    P5SEL0 = 0xC0;
+    P6SEL0 = 0xC0;
     P7SEL0 = 0xF0;
 
     //start Timers 1 and 2
@@ -141,7 +100,7 @@ void timing1(void){
 //void timing3(void){}
 //void timing4(void){}
 
-void bump(void){
+/*void bump(void){
     //stop motors
     //sleep controls on
     P3OUT &= 0b11111100;
@@ -170,7 +129,7 @@ void bump(void){
 
     //go forward and release control
 
-}
+}*/
 
 
 //clock system control:
@@ -247,7 +206,7 @@ void PORT4_IRQHandler(void){
     //repeated interrupts read through P4IV
     //or
     //one ISR that detects all switch presses?
-    bump();
+    //bump();
 }
 
 
@@ -259,7 +218,7 @@ void main(void)
 
     //port map TA0 CCR3,4 to 2.0 and 2.2 for RGB LED
     //write access key
-    PMAPKEYID = 0x96A5;
+    PMAPKEYID = 0x2D52;
     //red LED to ccr3
     //should work b/c little endian P2MAP0 is the less significant byte
     P2MAP01 = PM_TA0CCR3A;
@@ -274,10 +233,14 @@ void main(void)
     TIMER_A0->CCTL[0] = 0x0080;    // CCI0 toggle
     TIMER_A0->CCR[0] =  255;    // Period or about 10 kHz
     //TIMER_A0->EX0 =     0x0005;    // Divide by 3
-    TIMER_A0->CCTL[1] = 0x0040;    // CCR1 toggle/reset
-    TIMER_A0->CCTL[2] = 0x0040;
+    TIMER_A0->CCTL[1] = 0x00E0;    // CCR1 toggle/reset
+    TIMER_A0->CCTL[2] = 0x00E0;
+    TIMER_A0->CCTL[3] = 0x00E0;
+    TIMER_A0->CCTL[4] = 0x00E0;
     TIMER_A0->CCR[1] =  128;    // CCR1 duty cycle is 50%
     TIMER_A0->CCR[2] =  128;
+    TIMER_A0->CCR[3] =  128;
+    TIMER_A0->CCR[4] =  128;
     TIMER_A0->CTL =     0x0250;    // up mode, divide by 1
 
     //configure Timer A1 (capture 0-3)
@@ -312,11 +275,11 @@ void main(void)
     //configure port 1 (red LED, Motor Control)
 
     //configure port 2 (RGB LED, PWM out)
-    //P2DIR = 0x3F;    //first 6 pins in port are outputs
-    //P2SEL0 = 0x30;   //pins 4 and 5 are PWM from TA0
-    //P2SEL1 &= ~0x3F;
-    //P2DS   = 0x3F;
-    //P2OUT &= 0x0F;
+    P2DIR = 0xFF;    //pins in port are outputs
+    P2SEL0 = 0xF5;   //pins 4 and 5 are PWM from TA0
+    P2SEL1 = 0x00;
+    P2DS   = 0xFF;
+    P2OUT = 0x00;
 
     //configure port 3 (velocity sensor input) (not yet implemented)
     P3DIR = 0xFF;    //all outputs
@@ -330,17 +293,17 @@ void main(void)
 
     //configure port 5 (capture input - TA2)
     P5DIR = 0x00;
-    P5DS = 0xB0;
-    P5SEL0 = 0x0B0;
+    P5DS = 0xC0;
+    P5SEL0 = 0x0C0;
     P5SEL1 = 0x00;
-    P5OUT = 0xB0;
+    P5OUT = 0xC0;
 
     //configure port 6 (capture input - TA2)
     P6DIR = 0x00;
-    P6DS = 0xB0;
-    P6SEL0 = 0xB0;
+    P6DS = 0xC0;
+    P6SEL0 = 0xC0;
     P6SEL1 = 0x00;
-    P6OUT = 0xB0;
+    P6OUT = 0xC0;
 
     //configure port 7 (capture input - TA1)
     P7DIR = 0x00;
@@ -363,15 +326,16 @@ void main(void)
     P10DIR  = 0xFF;   //all outputs
     P10SEL0 = 0x00;   //as GPIO
     P10SEL1 = 0x00;   //minimize power
+    P10OUT = 0x03;
 
     //enable interrupts
-    NVIC_EnableIRQ(PORT4_IRQn);
+    //NVIC_EnableIRQ(PORT4_IRQn);
     NVIC_EnableIRQ(TA3_0_IRQn);
     NVIC_EnableIRQ(TA3_N_IRQn);
 
-
-//----------------infinite loop-----------------------------------
     int i;
+//----------------infinite loop-----------------------------------
+
     while(1){
         for(i = 0; i < 1000; i++){}
     }
@@ -382,21 +346,25 @@ void main(void)
 void inline setRightPWM(int v){
     if(v < 0){
         v *= -1;
+        P10OUT |= BIT3;
         //change direction
     }
     else{
         //change direction
+        P10OUT &= ~BIT3;
     }
-    TIMER_A0->CCR[n] = v;
+    TIMER_A0->CCR[2] = v;
 }
 
 void inline setLeftPWM(int v){
     if(v < 0){
         v *= -1;
+        P10OUT |= BIT2;
         //change direction
     }
     else{
         //change direction
+        P10OUT &= ~BIT2;
     }
-    Timer_A0->CCR[n] = v;
+    TIMER_A0->CCR[1] = v;
 }
