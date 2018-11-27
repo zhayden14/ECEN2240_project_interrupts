@@ -69,7 +69,7 @@ void timing0(void){
     if(cycles == 25){
         //enable bump switches
         P4IFG = 0x00;
-        //NVIC_EnableIRQ(PORT4_IRQn);
+        NVIC_EnableIRQ(PORT4_IRQn);
         //start motors
         setLeftPWM(PWMleft0);
         setRightPWM(PWMright0);
@@ -153,7 +153,7 @@ void bump(void){
     ctlstate = 1;
 
     //wait for specified time
-    int w;
+    unsigned long int w;
     for(w = 0; w < 262144; w++){}
 
     //back up
@@ -165,7 +165,7 @@ void bump(void){
     //turn right
     setLeftPWM(PWMleft0);
     //wait
-    for(w = 0; w < 262144; w++){}
+    for(w = 0; w < 300000; w++){}
 
     //clear interrupt flags
     P4IFG = 0x00;
@@ -180,10 +180,30 @@ void bump(void){
     //turn left
     setLeftPWM(-1*PWMleft0);
     //wait
-    for(w = 0; w < 524288; w++){}
+    for(w = 0; w < 300000; w++){}
+
+    //go forward
+    setLeftPWM(PWMleft0);
+    //wait
+    for(w = 0; w < 1500000; w++){}
+
+    //turn left
+    setLeftPWM(-1*PWMleft0);
+    //wait
+    for(w = 0; w < 300000; w++){}
+
+    //go forward
+    setLeftPWM(PWMleft0);
+    //wait
+    for(w = 0; w < 1048567; w++){}
+
+    //turn right
+    setRightPWM(-1*PWMright0);
+    //wait
+    for(w = 0; w < 300000; w++){}
 
     //go forward and release control
-    setLeftPWM(PWMleft0);
+    setRightPWM(PWMright0);
 
     //enable line following
     ctlstate = 0;
